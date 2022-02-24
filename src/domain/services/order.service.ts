@@ -21,17 +21,26 @@ export default class OrderService {
     this.clientRepository = clientRepository;
   }
 
-  async create(order: Order, id: string): Promise<Order> {
+  async create(
+    body: Order,
+    id: string,
+  ): Promise<{ messages: Array<string>; order: Order }> {
     try {
-      if (!order.products.length)
+      if (!body.products.length)
         throw new Error('Your order must have at least one product');
 
       if (!(await this.checkClientOrderedExists(id)))
         throw new Error("The user who had created the order doesn't exist");
 
-      await this.checkProductsAvailability(order);
+      const messages = await this.checkProductsAvailability(body);
+      const newOrder = await this.orderRepository.createOrder(body);
 
-      return this.orderRepository.createOrder(order);
+      if (messages.length) throw new Error(messages.join(', '));
+
+      return {
+        messages,
+        order: newOrder,
+      };
     } catch (err) {
       throw new Error(err.message);
     }
@@ -42,7 +51,8 @@ export default class OrderService {
     return !!client;
   }
 
-  async checkProductsAvailability(order: Order) {
+  async checkProductsAvailability(order: Order): Promise<Array<string>> {
+    const productsNotAvailable = [];
     const ids = order.products.map((p) => p.productId);
 
     const products = await this.productRepository.getProductsByItsIds(ids);
@@ -53,7 +63,13 @@ export default class OrderService {
           if (p.currentQuantity < prod.currentQuantity)
             throw new Error(`There's not ${prod.productId} enough`);
         }
+
+        productsNotAvailable.push(
+          `The ${prod.productId} is not available or doesn't exist.\n`,
+        );
       });
     });
+
+    return productsNotAvailable;
   }
 }
