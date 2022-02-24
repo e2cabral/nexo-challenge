@@ -10,6 +10,8 @@ import OrderRepository from './data/repositories/order.repository';
 import ClientRepository from './data/repositories/client.repository';
 import ProductRepository from './data/repositories/product.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import ProductService from './domain/services/product.service';
+import ClientService from './domain/services/client.service';
 
 @Module({
   imports: [
@@ -26,21 +28,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     ClientController,
     OrderController,
   ],
-  providers: [
-    AppService,
-    OrderService,
-    // {
-    //   provide: 'OrderRepository',
-    //   useValue: OrderRepository,
-    // },
-    // {
-    //   provide: 'ProductRepository',
-    //   useValue: ProductRepository,
-    // },
-    // {
-    //   provide: 'ClientRepository',
-    //   useValue: ClientRepository,
-    // },
-  ],
+  providers: [AppService, OrderService, ProductService, ClientService],
 })
 export class AppModule {}
