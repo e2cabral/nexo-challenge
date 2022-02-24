@@ -1,24 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import Order from '../models/order.model';
 import OrderRepository from '../../data/repositories/order.repository';
-import ProductRepository from '../../data/repositories/product.repository';
-import ClientRepository from '../../data/repositories/client.repository';
 import { InjectRepository } from '@nestjs/typeorm';
+import ProductService from './product.service';
+import ClientService from './client.service';
 
 @Injectable()
 export default class OrderService {
   orderRepository: OrderRepository;
-  productRepository: ProductRepository;
-  clientRepository: ClientRepository;
+  productService: ProductService;
+  clientService: ClientService;
 
   constructor(
     @InjectRepository(OrderRepository) orderRepository: OrderRepository,
-    @InjectRepository(ProductRepository) productRepository: ProductRepository,
-    @InjectRepository(ClientRepository) clientRepository: ClientRepository,
+    productService: ProductService,
+    clientService: ClientService,
   ) {
     this.orderRepository = orderRepository;
-    this.productRepository = productRepository;
-    this.clientRepository = clientRepository;
+    this.productService = productService;
+    this.clientService = clientService;
   }
 
   async create(body: Order, id: string): Promise<Order> {
@@ -26,10 +26,12 @@ export default class OrderService {
       if (!body.products.length)
         throw new Error('Your order must have at least one product');
 
-      if (!(await this.checkClientOrderedExists(id)))
+      if (!(await this.clientService.checkClientOrderedExists(id)))
         throw new Error("The user who had created the order doesn't exist");
 
-      const messages = await this.checkProductsAvailability(body);
+      const messages = await this.productService.checkProductsAvailability(
+        body,
+      );
 
       if (messages.length) throw new Error(messages.join(', '));
 
@@ -37,34 +39,5 @@ export default class OrderService {
     } catch (err) {
       throw new Error(err.message);
     }
-  }
-
-  // TODO: Alterar a função para o escopo da service responsável
-  async checkClientOrderedExists(id: string): Promise<boolean> {
-    const client = await this.clientRepository.getById(id);
-    return !!client;
-  }
-
-  // TODO: Alterar a função para o escopo da service responsável
-  async checkProductsAvailability(order: Order): Promise<Array<string>> {
-    const productsNotAvailable = [];
-    const ids = order.products.map((p) => p.productId);
-
-    const products = await this.productRepository.getProductsByItsIds(ids);
-
-    order.products.forEach((p) => {
-      products.forEach((prod) => {
-        if (p.productId === prod.productId) {
-          if (p.currentQuantity < prod.currentQuantity)
-            throw new Error(`There's not ${prod.productId} enough`);
-        }
-
-        productsNotAvailable.push(
-          `The ${prod.productId} is not available or doesn't exist.\n`,
-        );
-      });
-    });
-
-    return productsNotAvailable;
   }
 }
