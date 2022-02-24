@@ -39,11 +39,13 @@ export default class OrderService {
     }
   }
 
+  // TODO: Alterar a função para o escopo da service responsável
   async checkClientOrderedExists(id: string): Promise<boolean> {
     const client = await this.clientRepository.getById(id);
     return !!client;
   }
 
+  // TODO: Alterar a função para o escopo da service responsável
   async checkProductsAvailability(order: Order): Promise<Array<string>> {
     const productsNotAvailable = [];
     const ids = order.products.map((p) => p.productId);
