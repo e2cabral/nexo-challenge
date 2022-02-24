@@ -21,10 +21,7 @@ export default class OrderService {
     this.clientRepository = clientRepository;
   }
 
-  async create(
-    body: Order,
-    id: string,
-  ): Promise<{ messages: Array<string>; order: Order }> {
+  async create(body: Order, id: string): Promise<Order> {
     try {
       if (!body.products.length)
         throw new Error('Your order must have at least one product');
@@ -33,14 +30,10 @@ export default class OrderService {
         throw new Error("The user who had created the order doesn't exist");
 
       const messages = await this.checkProductsAvailability(body);
-      const newOrder = await this.orderRepository.createOrder(body);
 
       if (messages.length) throw new Error(messages.join(', '));
 
-      return {
-        messages,
-        order: newOrder,
-      };
+      return await this.orderRepository.createOrder(body);
     } catch (err) {
       throw new Error(err.message);
     }
